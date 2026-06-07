@@ -1,0 +1,13 @@
+langchain
+langchain-groq
+langgraph
+langchain-huggingface
+groq
+huggingface-hub
+pydantic
+python-dotenv
+sentence-transformers
+streamlit
+plotly
+Pillow
+psycopg2-binary
