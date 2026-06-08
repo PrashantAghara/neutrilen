@@ -6,7 +6,7 @@ from agents.state import AgentState, NutritionEntry
 
 HF_API_URL = "https://router.huggingface.co/hf-inference/models/nateraw/food"
 HF_HEADERS = {"Authorization": f"Bearer {os.environ.get('HF_TOKEN', '')}"}
-CONFIDENCE_THRESHOLD = int(os.environ.get("CONFIDENCE_THRESHOLD"))
+CONFIDENCE_THRESHOLD = float(os.environ.get("CONFIDENCE_THRESHOLD"))
 
 
 def hf_classify_food(image_b64: str) -> dict:

@@ -5,7 +5,6 @@ from db import get_user, create_user, fetch_goals, fetch_streak
 
 load_dotenv()
 
-# ── Page Config ───────────────────────────────────────────────
 st.set_page_config(
     page_title="NutriLens AI",
     page_icon="🥗",
@@ -13,7 +12,6 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ── Custom CSS ────────────────────────────────────────────────
 st.markdown(
     """
 <style>
@@ -79,7 +77,6 @@ st.markdown(
 )
 
 
-# ── Session Initialisation ────────────────────────────────────
 def init_session():
     if st.session_state.get("initialized"):
         return
@@ -106,7 +103,6 @@ def init_session():
     st.session_state.initialized = True
 
 
-# ── Sidebar ───────────────────────────────────────────────────
 def render_sidebar():
     with st.sidebar:
         st.markdown(
@@ -187,7 +183,6 @@ def render_sidebar():
         st.caption(f"{st.session_state.get('today_calories', 0):.0f} / {cal_goal} kcal")
 
 
-# ── Navigation — MUST be before any page content ─────────────
 def main():
     init_session()
 

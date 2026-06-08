@@ -145,13 +145,17 @@ def save_food_logs_bulk(entries: list[dict]) -> list[FoodLogRow]:
                 cur.execute(
                     """
                     INSERT INTO food_logs
-                        (user_id, food_name, calories, protein, carbs, fat, portion_g, image_b64, confidence, source, notes)
+                        (user_id, meal_id, dish_name, food_name, calories,
+                        protein, carbs, fat, portion_g, image_b64,
+                        confidence, source, notes)
                     VALUES
-                        (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     RETURNING *
                     """,
                     (
                         e["user_id"],
+                        e.get("meal_id"),
+                        e.get("dish_name"),
                         e["food_name"],
                         e["calories"],
                         e["protein"],
@@ -409,3 +413,60 @@ def save_image_cache(
                 )
                 row = cur.fetchone()
             return row
+
+
+def fetch_today_meals(user_id: str, for_date=None) -> list[dict]:
+    """
+    Return today's logs grouped by meal_id.
+    Each meal has: dish_name, total macros, logged_at,
+    image_b64, and list of ingredients.
+    """
+    from datetime import date as dt
+
+    target = for_date or dt.today()
+
+    with get_db() as conn:
+        with get_cursor(conn) as cur:
+            cur.execute(
+                """
+                SELECT
+                    meal_id,
+                    dish_name,
+                    MIN(logged_at)   AS logged_at,
+                    SUM(calories)    AS total_calories,
+                    SUM(protein)     AS total_protein,
+                    SUM(carbs)       AS total_carbs,
+                    SUM(fat)         AS total_fat,
+                    MAX(image_b64)   AS image_b64,
+                    COUNT(*)         AS ingredient_count,
+                    MAX(source)      AS source
+                FROM food_logs
+                WHERE user_id  = %s
+                AND log_date = %s
+                GROUP BY meal_id, dish_name
+                ORDER BY MIN(logged_at) ASC
+                """,
+                (user_id, target),
+            )
+            meals = cur.fetchall()
+
+            # Attach ingredients list to each meal
+            result = []
+            for meal in meals:
+                cur.execute(
+                    """
+                    SELECT food_name, calories, protein, carbs,
+                        fat, portion_g, confidence, source
+                    FROM food_logs
+                    WHERE user_id = %s
+                    AND meal_id = %s
+                    ORDER BY id ASC
+                    """,
+                    (user_id, meal["meal_id"]),
+                )
+                ingredients = cur.fetchall()
+                meal_dict = dict(meal)
+                meal_dict["ingredients"] = [dict(i) for i in ingredients]
+                result.append(meal_dict)
+
+            return result
