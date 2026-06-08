@@ -1,6 +1,5 @@
 import streamlit as st
 from datetime import date
-from db import delete_food_log, fetch_today_logs
 from db.queries import fetch_today_meals
 from db.connection import get_db
 from db.queries import get_cursor
@@ -57,13 +56,12 @@ def render_meal_card(meal):
                 st.rerun()
 
         # Expandable ingredients list
-        with st.expander(
-            f"View {meal['ingredient_count']} ingredients", expanded=False
-        ):
+        with st.expander(f"View {meal['ingredient_count']} ingredients"):
             for ing in meal["ingredients"]:
-                veg_icon = "🟢"  # default veg — stored is_veg not in DB yet
+                veg_icon = "🟢" if ing.get("is_veg", True) else "🔴"
+                flag_text = " ⚠️" if ing.get("flagged") else ""
                 st.markdown(
-                    f"{veg_icon} **{ing['food_name']}** — "
+                    f"{veg_icon} **{ing['food_name']}**{flag_text} — "
                     f"🔥 {ing['calories']:.0f} kcal  "
                     f"💪 P {ing['protein']:.1f}g  "
                     f"🌾 C {ing['carbs']:.1f}g  "
@@ -145,6 +143,91 @@ def diary_page():
     st.caption(f"{total_cal:.0f} / {cal_goal} kcal  —  {len(meals)} meal(s) logged")
 
     st.markdown("<br>", unsafe_allow_html=True)
+
+    # ── Manual Entry ──────────────────────────────────────────────
+
+    with st.expander("➕ Add Manual Entry"):
+        with st.form("manual_entry_form"):
+            st.markdown(
+                "<p style='color:#8B8FA8; font-size:13px; margin-bottom:12px;'>"
+                "Log a meal manually — useful for drinks, snacks, "
+                "and packaged foods.</p>",
+                unsafe_allow_html=True,
+            )
+
+            dish = st.text_input("Dish / Food Name", placeholder="e.g. Protein shake")
+
+            col1, col2 = st.columns(2)
+            with col1:
+                man_calories = st.number_input(
+                    "🔥 Calories (kcal)", min_value=0.0, step=1.0
+                )
+                man_protein = st.number_input("💪 Protein (g)", min_value=0.0, step=0.5)
+            with col2:
+                man_carbs = st.number_input("🌾 Carbs (g)", min_value=0.0, step=0.5)
+                man_fat = st.number_input("🥑 Fat (g)", min_value=0.0, step=0.5)
+
+            col3, col4 = st.columns(2)
+            with col3:
+                man_portion = st.number_input("⚖️ Portion (g)", min_value=0.0, step=5.0)
+            with col4:
+                man_is_veg = st.radio(
+                    "Type",
+                    options=["veg", "non_veg"],
+                    format_func=lambda x: "🟢 Veg" if x == "veg" else "🔴 Non-veg",
+                    horizontal=True,
+                )
+
+            man_notes = st.text_input(
+                "Notes (optional)", placeholder="e.g. post-workout"
+            )
+
+            if st.form_submit_button("➕ Add Entry", use_container_width=True):
+                if not dish:
+                    st.error("Please enter a food name.")
+                else:
+                    import uuid
+                    from db import save_food_logs_bulk
+
+                    meal_id = str(uuid.uuid4())
+                    save_food_logs_bulk(
+                        [
+                            {
+                                "user_id": user_id,
+                                "meal_id": meal_id,
+                                "dish_name": dish,
+                                "food_name": dish,
+                                "calories": man_calories,
+                                "protein": man_protein,
+                                "carbs": man_carbs,
+                                "fat": man_fat,
+                                "portion_g": man_portion or None,
+                                "image_b64": None,
+                                "confidence": 1.0,
+                                "source": "manual",
+                                "notes": man_notes or None,
+                                "is_veg": man_is_veg == "veg",
+                                "flagged": False,
+                            }
+                        ]
+                    )
+
+                    # Update session state
+                    st.session_state.today_calories = (
+                        st.session_state.get("today_calories", 0) + man_calories
+                    )
+                    st.session_state.today_protein = (
+                        st.session_state.get("today_protein", 0) + man_protein
+                    )
+                    st.session_state.today_carbs = (
+                        st.session_state.get("today_carbs", 0) + man_carbs
+                    )
+                    st.session_state.today_fat = (
+                        st.session_state.get("today_fat", 0) + man_fat
+                    )
+
+                    st.success(f"✅ {dish} logged successfully!")
+                    st.rerun()
 
     # ── Meal cards ────────────────────────────────────────────
     st.markdown(

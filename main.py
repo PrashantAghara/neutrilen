@@ -1,4 +1,3 @@
-import os
 import streamlit as st
 from dotenv import load_dotenv
 from db import get_user, create_user, fetch_goals, fetch_streak
@@ -89,6 +88,11 @@ def init_session():
     goals = fetch_goals(user_id)
     streak = fetch_streak(user_id)
 
+    # Load today's totals on startup
+    from db import fetch_daily_total
+
+    daily = fetch_daily_total(user_id)
+
     st.session_state.user_id = user_id
     st.session_state.user_name = user["name"]
     st.session_state.goals = goals
@@ -99,7 +103,10 @@ def init_session():
     st.session_state.badge_7 = streak["badge_7"]
     st.session_state.badge_14 = streak["badge_14"]
     st.session_state.badge_30 = streak["badge_30"]
-    st.session_state.today_calories = 0
+    st.session_state.today_calories = daily.get("total_calories", 0) or 0
+    st.session_state.today_protein = daily.get("total_protein", 0) or 0
+    st.session_state.today_carbs = daily.get("total_carbs", 0) or 0
+    st.session_state.today_fat = daily.get("total_fat", 0) or 0
     st.session_state.initialized = True
 
 
@@ -167,20 +174,23 @@ def render_sidebar():
 
         goals = st.session_state.get("goals", {})
         cal_goal = goals.get("calories", 2000)
+
         st.markdown(
             "<p style='color:#8B8FA8; font-size:12px; margin: 0 0 6px 0;'>"
-            "Today's Calorie Goal</p>",
+            "Today's Progress</p>",
             unsafe_allow_html=True,
         )
-        st.progress(
-            min(
-                st.session_state.get("today_calories", 0) / cal_goal
-                if cal_goal > 0
-                else 0,
-                1.0,
-            )
+
+        today_cal = st.session_state.get("today_calories", 0)
+        today_protein = st.session_state.get("today_protein", 0)
+        today_carbs = st.session_state.get("today_carbs", 0)
+        today_fat = st.session_state.get("today_fat", 0)
+
+        st.progress(min(today_cal / cal_goal if cal_goal > 0 else 0, 1.0))
+        st.caption(f"🔥 {today_cal:.0f} / {cal_goal} kcal")
+        st.caption(
+            f"💪 {today_protein:.1f}g  🌾 {today_carbs:.1f}g  🥑 {today_fat:.1f}g"
         )
-        st.caption(f"{st.session_state.get('today_calories', 0):.0f} / {cal_goal} kcal")
 
 
 def main():

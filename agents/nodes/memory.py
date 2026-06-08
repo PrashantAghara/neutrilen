@@ -24,8 +24,8 @@ def memory_node(state: AgentState) -> dict:
         rows = [
             {
                 "user_id": state["user_id"],
-                "meal_id": meal_id,  # ← new
-                "dish_name": state["dish_name"],  # ← new
+                "meal_id": meal_id,
+                "dish_name": state["dish_name"],
                 "food_name": e.food_name,
                 "calories": e.calories,
                 "protein": e.protein,
@@ -35,6 +35,8 @@ def memory_node(state: AgentState) -> dict:
                 "image_b64": state["image_b64"],
                 "confidence": e.confidence,
                 "source": e.source,
+                "is_veg": e.is_veg,  # ← new
+                "flagged": e.flagged,  # ← new
             }
             for e in entries
         ]

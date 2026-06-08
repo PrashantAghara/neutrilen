@@ -189,19 +189,37 @@ def analyse_page():
                 if result.get("error"):
                     st.error(f"Analysis failed: {result['error']}")
                 else:
-                    # Update session state with latest data
+                    # Sync session state after every analyse run
                     st.session_state.streak = result["streak"]
                     st.session_state.today_calories = result["daily_total"].get(
                         "total_calories", 0
                     )
+                    st.session_state.today_protein = result["daily_total"].get(
+                        "total_protein", 0
+                    )
+                    st.session_state.today_carbs = result["daily_total"].get(
+                        "total_carbs", 0
+                    )
+                    st.session_state.today_fat = result["daily_total"].get(
+                        "total_fat", 0
+                    )
 
-                    # Check for newly earned badges
+                    # Update badges in session state
                     streak = result["streak"]
+                    if streak >= 3:
+                        st.session_state.badge_3 = True
+                    if streak >= 7:
+                        st.session_state.badge_7 = True
+                    if streak >= 14:
+                        st.session_state.badge_14 = True
+                    if streak >= 30:
+                        st.session_state.badge_30 = True
+
+                    # Balloons only on milestone days exactly
                     if streak in [3, 7, 14, 30]:
                         st.balloons()
                         st.success(f"🏅 {streak}-day streak milestone reached!")
 
-                    # Check for flagged items
                     flagged = [
                         e.food_name for e in result["nutrition_entries"] if e.flagged
                     ]

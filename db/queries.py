@@ -147,9 +147,10 @@ def save_food_logs_bulk(entries: list[dict]) -> list[FoodLogRow]:
                     INSERT INTO food_logs
                         (user_id, meal_id, dish_name, food_name, calories,
                         protein, carbs, fat, portion_g, image_b64,
-                        confidence, source, notes)
+                        confidence, source, notes, is_veg, flagged)
                     VALUES
-                        (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                        %s, %s, %s, %s, %s)
                     RETURNING *
                     """,
                     (
@@ -166,6 +167,8 @@ def save_food_logs_bulk(entries: list[dict]) -> list[FoodLogRow]:
                         e.get("confidence", 1.0),
                         e.get("source", "groq"),
                         e.get("notes"),
+                        e.get("is_veg", True),
+                        e.get("flagged", False),
                     ),
                 )
                 rows.append(cur.fetchone())
@@ -456,7 +459,8 @@ def fetch_today_meals(user_id: str, for_date=None) -> list[dict]:
                 cur.execute(
                     """
                     SELECT food_name, calories, protein, carbs,
-                        fat, portion_g, confidence, source
+                        fat, portion_g, confidence, source,
+                        is_veg, flagged
                     FROM food_logs
                     WHERE user_id = %s
                     AND meal_id = %s
