@@ -1,9 +1,6 @@
-# app.py
-import os
 import streamlit as st
 from dotenv import load_dotenv
 from utils.auth import is_authenticated, logout
-from db import fetch_daily_total
 
 load_dotenv()
 

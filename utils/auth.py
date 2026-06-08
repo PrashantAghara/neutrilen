@@ -3,7 +3,6 @@ import uuid
 import bcrypt
 import streamlit as st
 from db.queries import (
-    get_user,
     get_user_by_email,
     create_user_with_password,
     fetch_goals,
