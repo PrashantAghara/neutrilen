@@ -11,3 +11,5 @@ streamlit
 plotly
 Pillow
 psycopg2-binary
+streamlit-authenticator
+bcrypt

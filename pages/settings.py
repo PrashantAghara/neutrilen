@@ -58,6 +58,35 @@ def settings_page():
 
     st.markdown("<br>", unsafe_allow_html=True)
 
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # ── Change Password ───────────────────────────────────────
+    st.markdown(
+        "<p style='color:#E8EAED; font-weight:600; margin-bottom:8px;'>"
+        "Change Password</p>",
+        unsafe_allow_html=True,
+    )
+
+    with st.form("change_password_form"):
+        curr_pass = st.text_input("Current Password", type="password")
+        new_pass = st.text_input("New Password", type="password")
+        conf_pass = st.text_input("Confirm New", type="password")
+
+        if st.form_submit_button("🔒 Update Password", use_container_width=True):
+            from utils.auth import verify_password, hash_password
+            from db.queries import update_password
+
+            user = get_user(user_id)
+            if not verify_password(curr_pass, user["password_hash"]):
+                st.error("Current password is incorrect.")
+            elif len(new_pass) < 6:
+                st.error("New password must be at least 6 characters.")
+            elif new_pass != conf_pass:
+                st.error("Passwords do not match.")
+            else:
+                update_password(user_id, hash_password(new_pass))
+                st.success("✅ Password updated successfully!")
+
     # ── Data Export ───────────────────────────────────────────
     st.markdown(
         "<p style='color:#E8EAED; font-weight:600; margin-bottom:8px;'>Export Data</p>",

@@ -474,3 +474,57 @@ def fetch_today_meals(user_id: str, for_date=None) -> list[dict]:
                 result.append(meal_dict)
 
             return result
+
+
+def get_user_by_email(email: str) -> Optional[UserRow]:
+    """Fetch user by email for login."""
+    with get_db() as conn:
+        with get_cursor(conn) as cur:
+            cur.execute("SELECT * FROM users WHERE email = %s", (email,))
+            return cur.fetchone()
+
+
+def create_user_with_password(
+    user_id: str,
+    name: str,
+    email: str,
+    password_hash: str,
+) -> UserRow:
+    """Create a new user with hashed password."""
+    with get_db() as conn:
+        with get_cursor(conn) as cur:
+            cur.execute(
+                """
+                INSERT INTO users (id, name, email, password_hash)
+                VALUES (%s, %s, %s, %s)
+                ON CONFLICT (email) DO NOTHING
+                RETURNING *
+                """,
+                (user_id, name, email, password_hash),
+            )
+            row = cur.fetchone()
+            if row is None:
+                cur.execute("SELECT * FROM users WHERE email = %s", (email,))
+                row = cur.fetchone()
+
+            # Auto create streak row
+            cur.execute(
+                """
+                INSERT INTO streaks (user_id)
+                VALUES (%s)
+                ON CONFLICT (user_id) DO NOTHING
+                """,
+                (row["id"],),
+            )
+            return row
+
+
+def update_password(user_id: str, password_hash: str) -> bool:
+    """Update user password hash."""
+    with get_db() as conn:
+        with get_cursor(conn) as cur:
+            cur.execute(
+                "UPDATE users SET password_hash = %s WHERE id = %s",
+                (password_hash, user_id),
+            )
+            return cur.rowcount > 0
