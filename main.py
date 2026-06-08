@@ -194,7 +194,7 @@ def main():
     pg = st.navigation(
         {
             "": [
-                st.Page("pages/0_Home.py", title="Home", icon="🏠"),
+                st.Page("pages/home.py", title="Home", icon="🏠"),
             ],
             "Tracking": [
                 st.Page("pages/analyse.py", title="Analyse", icon="📸"),
